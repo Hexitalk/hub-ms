@@ -1,0 +1,12 @@
+{
+  "single-test": "Single test",
+  "error": {
+    "user-not-found": "User not found",
+    "fail-save-user": "User can´t be saved",
+    "fail-create-user": "Fail create user"
+  },
+  "other": {
+    "other-1": "Other 1",
+    "other-2": "Other 2"
+  }
+}
