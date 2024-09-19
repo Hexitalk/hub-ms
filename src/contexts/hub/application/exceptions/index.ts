@@ -1,2 +1,2 @@
-export * from './fail-create-hub-rpc-exception';
-export * from './hub-not-found-rpc-exception';
+export * from './fail-create-hub-chat-rpc-exception';
+export * from './hub-chat-not-found-rpc-exception';

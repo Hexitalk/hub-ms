@@ -9,9 +9,9 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RpcExceptionInterceptor } from '../../shared/interceptors/rpc-exception-translate.interceptor';
 import { I18nJsonLoader, I18nModule } from 'nestjs-i18n';
 import { NatsLanguageResolver } from '../../shared/i18n-resolvers/nats-language.resolver';
-import { hubsMongoProviders } from './mongo/providers/hub.mongo.providers';
-import { HubDbRepository } from './repositories/hub-db.repository';
-import { HubRepository } from '../domain/ports/hub.repository';
+import { HubChatRepository } from '../domain/ports/hub-chat.repository';
+import { HubChatDbRepository } from './repositories/hub-chat-db.repository';
+import { hubChatMongoProviders } from './mongo/providers/hub-chat.mongo.providers';
 
 @Module({
   imports: [
@@ -29,12 +29,12 @@ import { HubRepository } from '../domain/ports/hub.repository';
   ],
   controllers: [...Object.values(controllers)],
   providers: [
-    ...hubsMongoProviders,
+    ...hubChatMongoProviders,
     ...Object.values(useCases),
-    HubDbRepository,
+    HubChatDbRepository,
     {
-      provide: HubRepository,
-      useExisting: HubDbRepository,
+      provide: HubChatRepository,
+      useExisting: HubChatDbRepository,
     },
     NatsLanguageResolver,
     {
@@ -44,10 +44,10 @@ import { HubRepository } from '../domain/ports/hub.repository';
   ],
   exports: [
     ...Object.values(useCases),
-    HubDbRepository,
+    HubChatDbRepository,
     {
-      provide: HubRepository,
-      useExisting: HubDbRepository,
+      provide: HubChatRepository,
+      useExisting: HubChatDbRepository,
     },
   ],
 })

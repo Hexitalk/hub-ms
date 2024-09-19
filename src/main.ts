@@ -5,7 +5,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const logger = new Logger('PROFILES-MICROSERVICE');
+  const logger = new Logger('HUBS-MICROSERVICE');
 
   logger.log(`DATABASE_URL: ${envs.databaseUrl}!`);
 

@@ -10,7 +10,7 @@ import { NatsPayloadConfigInterface } from 'src/contexts/shared/nats/interfaces'
 import { NatsPayloadConfig } from 'src/contexts/shared/decorators';
 import { HubChatRepository } from 'src/contexts/hub/domain/ports/hub-chat.repository';
 import { FailSaveDatabaseException } from 'src/contexts/hub/domain/exceptions/database/fail-save-database-exception';
-import { FailCreateHubRpcException } from '../../exceptions/fail-create-profile-rpc-exception';
+import { FailCreateHubChatRpcException } from '../../exceptions';
 
 @Injectable()
 export class CreateHubUseCase {
@@ -26,8 +26,8 @@ export class CreateHubUseCase {
     for (let slot = 1; slot <= 6; slot++) {
       const hubModel = HubChatModel.create({
         user_id: userId,
+        profile_id: null,
         last_message_date: '',
-        profile_id: '',
         slot,
         unread_messages: 0,
       });
@@ -44,7 +44,7 @@ export class CreateHubUseCase {
         }
       } catch (error) {
         if (error instanceof FailSaveDatabaseException) {
-          throw new FailCreateHubRpcException();
+          throw new FailCreateHubChatRpcException();
         }
         throw new RpcException('error');
       }

@@ -1,8 +1,8 @@
 export interface HubChatModelInterface {
   id: string;
   user_id: string;
+  profile_id: string | null;
   slot: number; // 1 - 6
-  profile_id: string;
   last_message_date: string;
   unread_messages: number;
 }
@@ -10,8 +10,8 @@ export interface HubChatModelInterface {
 export interface HubChatModelInterfaceDb {
   _id: string;
   user_id: string;
+  profile_id: string | null;
   slot: number; // 1 - 6
-  profile_id: string;
   last_message_date: string;
   unread_messages: number;
 }
@@ -22,9 +22,9 @@ export class HubChatModel {
   static create(attributes: Partial<HubChatModelInterface>): HubChatModel {
     return new HubChatModel({
       id: attributes.id ?? undefined,
-      user_id: attributes.user_id ?? undefined,
+      user_id: attributes.user_id ?? null,
+      profile_id: attributes.profile_id ?? null,
       slot: attributes.slot ?? 0,
-      profile_id: attributes.profile_id ?? '',
       last_message_date: attributes.last_message_date ?? '',
       unread_messages: attributes.unread_messages ?? 0,
     });
@@ -35,9 +35,9 @@ export class HubChatModel {
   ): HubChatModel {
     return new HubChatModel({
       id: attributes._id ?? undefined,
-      user_id: attributes.user_id ?? undefined,
+      user_id: attributes.user_id ?? null,
+      profile_id: attributes.profile_id ?? null,
       slot: attributes.slot ?? 0,
-      profile_id: attributes.profile_id ?? '',
       last_message_date: attributes.last_message_date ?? '',
       unread_messages: attributes.unread_messages ?? 0,
     });
