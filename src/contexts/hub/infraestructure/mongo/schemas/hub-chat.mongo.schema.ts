@@ -1,4 +1,5 @@
 import * as mongoose from 'mongoose';
+import { HubChatStateEnum } from 'src/contexts/hub/domain/enums';
 
 const HubChatMongoSchema = new mongoose.Schema(
   {
@@ -6,11 +7,15 @@ const HubChatMongoSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       auto: true,
     },
-    user_id: {
+    // user_id: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   required: true,
+    // },
+    origin_profile_id: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
-    profile_id: {
+    target_profile_id: {
       type: mongoose.Schema.Types.ObjectId,
       required: false,
       default: null,
@@ -26,6 +31,11 @@ const HubChatMongoSchema = new mongoose.Schema(
     unread_messages: {
       type: Number,
       required: false,
+    },
+    state: {
+      type: String,
+      enum: Object.values(HubChatStateEnum),
+      required: true,
     },
   },
   {

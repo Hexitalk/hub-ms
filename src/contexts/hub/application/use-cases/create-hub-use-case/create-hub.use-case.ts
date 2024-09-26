@@ -4,37 +4,72 @@ import {
   HubChatModel,
   HubChatModelInterface,
 } from 'src/contexts/hub/domain/models/hub-chat.model';
-import { RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 
-import { NatsPayloadConfigInterface } from 'src/contexts/shared/nats/interfaces';
+import {
+  NatsPayloadConfigInterface,
+  NatsPayloadInterface,
+} from 'src/contexts/shared/nats/interfaces';
 import { NatsPayloadConfig } from 'src/contexts/shared/decorators';
 import { HubChatRepository } from 'src/contexts/hub/domain/ports/hub-chat.repository';
 import { FailSaveDatabaseException } from 'src/contexts/hub/domain/exceptions/database/fail-save-database-exception';
 import { FailCreateHubChatRpcException } from '../../exceptions';
+import { HubChatStateEnum } from 'src/contexts/hub/domain/enums';
+import { NATS_SERVICE } from 'src/config';
+import { Inject } from '@nestjs/common';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class CreateHubUseCase {
-  constructor(private readonly hubChatRepository: HubChatRepository) {}
+  constructor(
+    private readonly hubChatRepository: HubChatRepository,
+    @Inject(NATS_SERVICE) private readonly client: ClientProxy,
+  ) {}
 
   async run(
+    params: { originProfileId: string },
     @NatsPayloadConfig() config?: NatsPayloadConfigInterface,
   ): Promise<{ hub: HubChatModelInterface[] }> {
     const responseHub: HubChatModelInterface[] = [];
 
-    const { authUserId: userId } = config;
+    const { originProfileId } = params;
+
+    // const { authUserId: userId } = config;
+
+    // let originProfileId: string;
+
+    // try {
+    //   const payloadGetUserProfileId: NatsPayloadInterface<string> = {
+    //     ...config,
+    //     data: userId,
+    //   };
+
+    //   const resGetUserProfileId = await firstValueFrom(
+    //     this.client.send(
+    //       { cmd: 'profiles.find-profile-by-user-id' },
+    //       payloadGetUserProfileId,
+    //     ),
+    //     { defaultValue: void 0 },
+    //   );
+
+    //   originProfileId = resGetUserProfileId.id;
+    // } catch (error) {
+    //   throw new RpcException('error');
+    // }
 
     for (let slot = 1; slot <= 6; slot++) {
       const hubModel = HubChatModel.create({
-        user_id: userId,
-        profile_id: null,
+        origin_profile_id: originProfileId,
+        target_profile_id: null,
         last_message_date: '',
         slot,
         unread_messages: 0,
+        state: HubChatStateEnum.CLOSE,
       });
 
       try {
         const resFindQuery = await this.hubChatRepository.findBySlot(
-          userId,
+          originProfileId,
           slot,
         );
 
@@ -43,6 +78,8 @@ export class CreateHubUseCase {
           responseHub.push(resQuery.toInterface());
         }
       } catch (error) {
+        console.log(error);
+
         if (error instanceof FailSaveDatabaseException) {
           throw new FailCreateHubChatRpcException();
         }

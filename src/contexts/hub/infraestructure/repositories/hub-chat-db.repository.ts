@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 // import { NotFoundDatabaseException } from '../../domain/exceptions/database/not-found-database-exception';
 import { FailSaveDatabaseException } from '../../domain/exceptions/database/fail-save-database-exception';
 import { FailDeleteDatabaseException } from '../../domain/exceptions/database/fail-delete-database-exception';
+import { HubChatStateEnum } from '../../domain/enums';
 
 @Injectable()
 export class HubChatDbRepository extends HubChatRepository {
@@ -63,31 +64,57 @@ export class HubChatDbRepository extends HubChatRepository {
   async findById(id: string): Promise<HubChatModel | undefined> {
     const hubChat = await this.hubChatModel.findById(id).exec();
 
-    // if (!hubChat) {
-    //   throw new NotFoundDatabaseException('hub');
-    // }
-
     return hubChat ? HubChatModel.createFromDb(hubChat.toObject()) : undefined;
   }
 
-  async findByUserId(userId: string): Promise<HubChatModel[]> {
-    const hub = await this.hubChatModel.find({ user_id: userId }).exec();
+  // async findByUserId(userId: string): Promise<HubChatModel[]> {
+  //   const hub = await this.hubChatModel.find({ user_id: userId }).exec();
 
-    return hub.map((hubChat) => HubChatModel.createFromDb(hubChat.toObject()));
-  }
+  //   return hub.map((hubChat) => HubChatModel.createFromDb(hubChat.toObject()));
+  // }
 
   async findBySlot(
-    userId: string,
+    profileId: string,
     slot: number,
   ): Promise<HubChatModel | undefined> {
     const hubChat = await this.hubChatModel
-      .findOne({ user_id: userId, slot })
+      .findOne({ origin_profile_id: profileId, slot })
       .exec();
 
-    // if (!hubChat) {
-    //   throw new NotFoundDatabaseException('hub');
-    // }
-
     return hubChat ? HubChatModel.createFromDb(hubChat.toObject()) : undefined;
+  }
+
+  async findByOriginProfileId(profileId: string): Promise<HubChatModel[]> {
+    const hubChats = await this.hubChatModel
+      .find({ origin_profile_id: profileId })
+      .exec();
+
+    return hubChats.map((hubChat) =>
+      HubChatModel.createFromDb(hubChat.toObject()),
+    );
+  }
+
+  async findByState(
+    state: HubChatStateEnum,
+    options: {
+      excludeProfilesIds?: string[];
+      limit?: number;
+    } = {},
+  ): Promise<HubChatModel[]> {
+    let query = this.hubChatModel.find({ state });
+
+    if (options.excludeProfilesIds) {
+      query = query.where('origin_profile_id').nin(options.excludeProfilesIds);
+      query = query.where('target_profile_id').nin(options.excludeProfilesIds);
+    }
+    if (options.limit) {
+      query = query.limit(options.limit);
+    } else {
+      query = query.limit(1);
+    }
+
+    const hubChat = await query.exec();
+
+    return hubChat.map((e) => HubChatModel.createFromDb(e.toObject()));
   }
 }

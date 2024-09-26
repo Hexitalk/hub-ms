@@ -4,7 +4,7 @@ import { NatsModule } from 'src/contexts/shared/nats/nats.module';
 
 import * as path from 'path';
 import * as useCases from '../application/use-cases/index';
-import * as controllers from './controllers/';
+import * as controllers from './controllers/index';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RpcExceptionInterceptor } from '../../shared/interceptors/rpc-exception-translate.interceptor';
 import { I18nJsonLoader, I18nModule } from 'nestjs-i18n';
@@ -51,4 +51,12 @@ import { hubChatMongoProviders } from './mongo/providers/hub-chat.mongo.provider
     },
   ],
 })
-export class HubModule {}
+export class HubModule {
+  constructor(
+    private continuousPairHubChatsUseCase: useCases.ContinuousPairHubChatsUseCase,
+  ) {
+    try {
+      continuousPairHubChatsUseCase.run({ authUserId: '', lang: 'en' });
+    } catch (error) {}
+  }
+}
