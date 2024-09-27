@@ -20,13 +20,9 @@ export class SetHubChatStateController {
 
     // User can´t assign this states to hub chat manually
     if (
-      [
-        HubChatStateEnum.ACCEPTED,
-        HubChatStateEnum.CONNECTED,
-        HubChatStateEnum.REQUEST,
-      ].includes(state)
+      [HubChatStateEnum.CONNECTED, HubChatStateEnum.REQUEST].includes(state)
     ) {
-      throw new ExceptionsHandler();
+      throw new Error('not valid hub chat enum');
     }
 
     return this.setHubChatOpenUseCase.run(authUserId, slot, state, config);

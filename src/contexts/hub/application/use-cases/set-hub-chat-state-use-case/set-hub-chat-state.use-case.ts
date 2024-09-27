@@ -12,10 +12,7 @@ import {
 } from 'src/contexts/shared/nats/interfaces';
 import { NatsPayloadConfig } from 'src/contexts/shared/decorators';
 import { HubChatRepository } from 'src/contexts/hub/domain/ports/hub-chat.repository';
-import { FailSaveDatabaseException } from 'src/contexts/hub/domain/exceptions/database/fail-save-database-exception';
-import { FailCreateHubChatRpcException } from '../../exceptions';
 import { HubChatStateEnum } from 'src/contexts/hub/domain/enums';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 import { firstValueFrom } from 'rxjs';
 import { NATS_SERVICE } from 'src/config';
 import { Inject } from '@nestjs/common';
@@ -36,6 +33,14 @@ export class SetHubChatStateUseCase {
     let responseHubChat: HubChatModelInterface;
     let originProfileId: string;
     let targetUserId: string | undefined;
+    let targetProfile: any;
+    let targetHubChat: HubChatModelInterface | undefined;
+
+    // console.log('ok 1');
+
+    // return {
+    //   hubChat: undefined,
+    // };
 
     try {
       const payloadGetUserProfileId: NatsPayloadInterface<string> = {
@@ -71,63 +76,83 @@ export class SetHubChatStateUseCase {
         state,
       };
 
-      if (state === HubChatStateEnum.OPEN || state === HubChatStateEnum.CLOSE) {
-        if (hubChatModelUpdateAttrs.target_profile_id) {
-          try {
-            const payloadGetTargetProfile: NatsPayloadInterface<{
-              profilesIds: string[];
-            }> = {
-              ...config,
-              data: {
-                profilesIds: [hubChatModelUpdateAttrs.target_profile_id],
-              },
-            };
+      if (hubChatModelUpdateAttrs.target_profile_id) {
+        try {
+          const payloadGetTargetProfile: NatsPayloadInterface<{
+            profilesIds: string[];
+          }> = {
+            ...config,
+            data: {
+              profilesIds: [hubChatModelUpdateAttrs.target_profile_id],
+            },
+          };
 
-            const resGetUserProfileId = await firstValueFrom(
-              this.client.send(
-                { cmd: 'profiles.find-list-profiles-by-ids' },
-                payloadGetTargetProfile,
-              ),
-              { defaultValue: void 0 },
-            );
+          const resGetUserProfileId = await firstValueFrom(
+            this.client.send(
+              { cmd: 'profiles.find-list-profiles-by-ids' },
+              payloadGetTargetProfile,
+            ),
+            { defaultValue: void 0 },
+          );
 
-            const targetProfile: any = resGetUserProfileId.profiles[0];
+          targetProfile = resGetUserProfileId.profiles[0];
 
-            if (!targetProfile) {
-              throw new RpcException('error 3');
-            }
-
-            targetUserId = targetProfile.user_id;
-
-            const targetListHubChat =
-              await this.hubChatRepository.findByOriginProfileId(
-                targetProfile.id,
-              );
-
-            const targetHubChat = targetListHubChat
-              .map((h) => h.toInterface())
-              .find(
-                (e) =>
-                  e.target_profile_id ==
-                  hubChatModelUpdateAttrs.origin_profile_id,
-              );
-
-            if (!targetHubChat) {
-              throw new RpcException('error 4');
-            }
-
-            const targetHubChatModelUpdate = HubChatModel.create({
-              ...targetHubChat,
-              state: HubChatStateEnum.CLOSE,
-              target_profile_id: null,
-            });
-
-            await this.hubChatRepository.update(targetHubChatModelUpdate);
-          } catch (error) {
-            throw new RpcException('error 5');
+          if (!targetProfile) {
+            throw new RpcException('error 3');
           }
 
+          targetUserId = targetProfile.user_id;
+
+          const targetListHubChat =
+            await this.hubChatRepository.findByOriginProfileId(
+              targetProfile.id,
+            );
+
+          targetHubChat = targetListHubChat
+            .map((h) => h.toInterface())
+            .find(
+              (e) =>
+                e.target_profile_id ==
+                hubChatModelUpdateAttrs.origin_profile_id,
+            );
+
+          if (!targetHubChat) {
+            throw new RpcException('error 4');
+          }
+        } catch (error) {
+          console.log(error);
+          throw new RpcException('error 5');
+        }
+      }
+
+      if (state === HubChatStateEnum.OPEN || state === HubChatStateEnum.CLOSE) {
+        if (targetProfile) {
+          const targetHubChatModelUpdate = HubChatModel.create({
+            ...targetHubChat,
+            state: HubChatStateEnum.CLOSE,
+            target_profile_id: null,
+          });
+
+          await this.hubChatRepository.update(targetHubChatModelUpdate);
+
           hubChatModelUpdateAttrs.target_profile_id = null;
+        }
+      }
+
+      if (state === HubChatStateEnum.ACCEPTED) {
+        if (!hubChatModelUpdateAttrs.target_profile_id) {
+          throw new RpcException('empty target profile');
+        }
+
+        if (targetProfile && targetHubChat.state == HubChatStateEnum.ACCEPTED) {
+          const targetHubChatModelUpdate = HubChatModel.create({
+            ...targetHubChat,
+            state: HubChatStateEnum.CONNECTED,
+          });
+
+          await this.hubChatRepository.update(targetHubChatModelUpdate);
+
+          hubChatModelUpdateAttrs.state = HubChatStateEnum.CONNECTED;
         }
       }
 
@@ -171,6 +196,7 @@ export class SetHubChatStateUseCase {
           );
         }
       } catch (error) {
+        console.log(error);
         throw new RpcException('error 7');
       }
     } catch (error) {

@@ -19,7 +19,7 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ContinuousPairHubChatsUseCase {
-  private timeBetweenLoops = 3000; // miliseconds
+  private timeBetweenLoops = 6000; // miliseconds
 
   constructor(
     private readonly hubChatRepository: HubChatRepository,
