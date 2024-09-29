@@ -64,6 +64,36 @@ export class GetHubUseCase {
       throw new RpcException('error');
     }
 
+    const allTargetProfilesIds: string[] = responseHub.hub_chats
+      .map((hc) => hc.target_profile_id)
+      .flat();
+
+    const payloadAllProfilesInfo: NatsPayloadInterface<{
+      profilesIds: string[];
+    }> = {
+      ...config,
+      data: { profilesIds: allTargetProfilesIds },
+    };
+
+    try {
+      const listProfilesResponse: { profiles: any[] } = await firstValueFrom(
+        this.client.send(
+          { cmd: 'profiles.find-list-profiles-by-ids' },
+          payloadAllProfilesInfo,
+        ),
+      );
+      const listAllprofiles = listProfilesResponse.profiles;
+
+      responseHub.hub_chats = responseHub.hub_chats.map((hc) => {
+        hc.target_profile = listAllprofiles.find(
+          (p) => p.id == hc.target_profile_id,
+        );
+        return hc;
+      });
+    } catch (error) {
+      throw new RpcException('error');
+    }
+
     return { hub: responseHub };
   }
 }

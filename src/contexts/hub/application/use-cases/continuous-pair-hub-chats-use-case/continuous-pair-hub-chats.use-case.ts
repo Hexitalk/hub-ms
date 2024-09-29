@@ -58,7 +58,7 @@ export class ContinuousPairHubChatsUseCase {
 
         targetProfilesIds = resRelationHubChats
           .map((h) => h.toInterface())
-          .filter((c) => c.state == HubChatStateEnum.CONNECTED)
+          // .filter((c) => c.state == HubChatStateEnum.CONNECTED)
           .map((t) => t.target_profile_id)
           .filter((e) => e);
       } catch (error) {
