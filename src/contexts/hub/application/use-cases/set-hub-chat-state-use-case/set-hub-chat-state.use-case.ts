@@ -150,9 +150,23 @@ export class SetHubChatStateUseCase {
             state: HubChatStateEnum.CONNECTED,
           });
 
-          await this.hubChatRepository.update(targetHubChatModelUpdate);
-
           hubChatModelUpdateAttrs.state = HubChatStateEnum.CONNECTED;
+
+          const payloadCreateChat: NatsPayloadInterface<{
+            profilesIds: string[];
+          }> = {
+            ...config,
+            data: {
+              profilesIds: [originProfileId, targetProfile.id],
+            },
+          };
+
+          await firstValueFrom(
+            this.client.send({ cmd: 'chats.create-chat' }, payloadCreateChat),
+            { defaultValue: void 0 },
+          );
+
+          await this.hubChatRepository.update(targetHubChatModelUpdate);
         }
       }
 
