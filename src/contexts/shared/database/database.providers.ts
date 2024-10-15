@@ -5,12 +5,6 @@ export const databaseProviders = [
   {
     provide: 'DATABASE_CONNECTION',
     useFactory: (): Promise<typeof mongoose> =>
-      mongoose.connect(envs.databaseUrl, {
-        dbName: envs.databaseName,
-        auth: {
-          username: envs.databaseUser,
-          password: envs.databasePass,
-        },
-      }),
+      mongoose.connect(envs.databaseUrl),
   },
 ];

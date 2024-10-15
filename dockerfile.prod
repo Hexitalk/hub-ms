@@ -9,44 +9,44 @@ COPY package-lock.json ./
 RUN npm install
 
 
-# Builder - Construye la aplicación
+# Builder
 FROM node:21-alpine3.19 as build
-
-ARG ORDERS_DATABASE_URL
-ENV DATABASE_URL=$ORDERS_DATABASE_URL
-
-# Imprimir el arg para ver el valor recibido
-RUN echo "database_url ::: $ORDERS_DATABASE_URL";
 
 WORKDIR /usr/src/app
 
-# Copiar de deps, los módulos de node
+ARG HUB_MS_PORT
+ARG NATS_PORT
+ARG HUB_DB_URL
+
+ENV PORT=${HUB_MS_PORT}
+ENV NATS_SERVERS=nats://nats-server:${NATS_PORT}
+ENV DATABASE_URL=${HUB_DB_URL}
+
+
+# copy node modules
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 
-# Copiar todo el codigo fuente de la aplicación
+# copy all app code files
 COPY . .
-
 
 # RUN npm run test
 RUN npm run build
 
 RUN npm ci -f --only=production && npm cache clean --force
 
-# Crear la imagen final de Docker
+# Create final docker image
 FROM node:21-alpine3.19 as prod
 
 WORKDIR /usr/src/app
 
-COPY --from=build /usr/src/app/node_modules ./node_modules
 
-# Copiar la carpeta de DIST
+COPY --from=build /usr/src/app/node_modules ./node_modules
 COPY --from=build /usr/src/app/dist ./dist
 
 
 ENV NODE_ENV=production
 
 USER node
-
 
 EXPOSE 3000
 
