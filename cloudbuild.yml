@@ -1,20 +1,27 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
     args:
-      [
-        'build',
-        '-t',
-        'europe-southwest1-docker.pkg.dev/hexitalk/hexitalk-img-registry/hub-ms',
-        '-f',
-        'dockerfile.prod',
-        '--platform=linux/amd64',
-        '.',
-      ]
+      - -c
+      - |
+        docker build -t europe-southwest1-docker.pkg.dev/hexitalk/hexitalk-img-registry/hub-ms -f dockerfile.prod --platform=linux/amd64 --build-arg HUB_MS_PORT=$$HUB_MS_PORT --build-arg HUB_DB_URL=$$HUB_DB_URL --build-arg NATS_PORT=$$NATS_PORT .
+    secretEnv: ['HUB_MS_PORT', 'NATS_PORT', 'HUB_DB_URL']
+
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
         'push',
         'europe-southwest1-docker.pkg.dev/hexitalk/hexitalk-img-registry/hub-ms',
       ]
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/188352291421/secrets/hub_ms_port/versions/1
+      env: 'HUB_MS_PORT'
+    - versionName: projects/188352291421/secrets/nats_port/versions/1
+      env: 'NATS_PORT'
+    - versionName: projects/188352291421/secrets/hub_db_url/versions/1
+      env: 'HUB_DB_URL'
+
 options:
   logging: CLOUD_LOGGING_ONLY
