@@ -19,7 +19,8 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ContinuousPairHubChatsUseCase {
-  private timeBetweenLoops = 6000; // miliseconds
+  private timeBetweenLoops = 15000; // miliseconds
+  private qtyPairChats = 20; // quantity of pairing chats
 
   constructor(
     private readonly hubChatRepository: HubChatRepository,
@@ -29,6 +30,27 @@ export class ContinuousPairHubChatsUseCase {
   async run(
     @NatsPayloadConfig() config?: NatsPayloadConfigInterface,
   ): Promise<void> {
+    const mainHubChatResponse = await this.hubChatRepository.findByState(
+      HubChatStateEnum.OPEN,
+      { limit: this.qtyPairChats },
+    );
+
+    for (let p = 0; p < mainHubChatResponse.length; p++) {
+      const mainHubChatModel = mainHubChatResponse[p];
+      if (mainHubChatModel) {
+        await this.pair(config, mainHubChatModel);
+      }
+    }
+
+    setTimeout(() => {
+      this.run(config);
+    }, this.timeBetweenLoops);
+  }
+
+  private async pair(
+    @NatsPayloadConfig() config: NatsPayloadConfigInterface,
+    mainHubChatModel: HubChatModel,
+  ) {
     try {
       let mainOriginId: string;
       let targetProfilesIds: string[];
@@ -36,11 +58,6 @@ export class ContinuousPairHubChatsUseCase {
       let mainHubChat: HubChatModelInterface;
 
       try {
-        const mainHubChatResponse = await this.hubChatRepository.findByState(
-          HubChatStateEnum.OPEN,
-        );
-
-        const mainHubChatModel = mainHubChatResponse[0];
         if (!mainHubChatModel) {
           throw new Error('error');
         }
@@ -163,9 +180,5 @@ export class ContinuousPairHubChatsUseCase {
     } catch (error) {
       // console.log('error');
     }
-
-    setTimeout(() => {
-      this.run(config);
-    }, this.timeBetweenLoops);
   }
 }
